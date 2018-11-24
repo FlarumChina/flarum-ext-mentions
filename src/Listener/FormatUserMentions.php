@@ -60,7 +60,7 @@ class FormatUserMentions
 
         $tag->template = '<a href="{$PROFILE_URL}{@username}" class="UserMention">@<xsl:value-of select="@displayname"/></a>';
         $tag->filterChain->prepend([static::class, 'addId'])
-            ->setJS('function(tag) { return System.get("flarum/mentions/utils/textFormatter").filterUserMentions(tag); }');
+            ->setJS('function(tag) { return flarum.extensions["flarum-mentions"].filterUserMentions(tag); }');
 
         $configurator->Preg->match('/\B@(?<username>[-_a-zA-Z0-9\x7f-\xff]+)(?!#)/i', $tagName);
     }
@@ -75,6 +75,7 @@ class FormatUserMentions
         $event->xml = Utils::replaceAttributes($event->xml, 'USERMENTION', function ($attributes) use ($post) {
             $user = $post->mentionsUsers->find($attributes['id']);
             if ($user) {
+                $attributes['username'] = $user->username;
                 $attributes['displayname'] = $user->display_name;
             }
 

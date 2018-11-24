@@ -1,14 +1,16 @@
-/*global getCaretCoordinates*/
+import getCaretCoordinates from 'textarea-caret';
 
 import { extend } from 'flarum/extend';
 import ComposerBody from 'flarum/components/ComposerBody';
+import TextEditor from 'flarum/components/TextEditor';
+import TextEditorButton from 'flarum/components/TextEditorButton';
 import avatar from 'flarum/helpers/avatar';
 import usernameHelper from 'flarum/helpers/username';
 import highlight from 'flarum/helpers/highlight';
 import KeyboardNavigatable from 'flarum/utils/KeyboardNavigatable';
 import { truncate } from 'flarum/utils/string';
 
-import AutocompleteDropdown from 'flarum/mentions/components/AutocompleteDropdown';
+import AutocompleteDropdown from './components/AutocompleteDropdown';
 
 export default function addComposerAutocomplete() {
   extend(ComposerBody.prototype, 'config', function(original, isInitialized) {
@@ -26,10 +28,12 @@ export default function addComposerAutocomplete() {
     const applySuggestion = function(replacement) {
       const insert = replacement + ' ';
 
+      // When calling setValue(), mentionStart will be set back to 0 so we need to compute this beforehand
+      const index = mentionStart - 1 + insert.length;
+
       const content = composer.content();
       composer.editor.setValue(content.substring(0, mentionStart - 1) + insert + content.substr($textarea[0].selectionStart));
 
-      const index = mentionStart - 1 + insert.length;
       composer.editor.setSelectionRange(index, index);
 
       dropdown.hide();
@@ -46,7 +50,7 @@ export default function addComposerAutocomplete() {
 
     $textarea
       .after($container)
-      .on('click keyup', function(e) {
+      .on('click keyup input', function(e) {
         // Up, down, enter, tab, escape, left, right.
         if ([9, 13, 27, 40, 38, 37, 39].indexOf(e.which) !== -1) return;
 
@@ -126,7 +130,7 @@ export default function addComposerAutocomplete() {
             if (discussion) {
               discussion.posts()
                 .filter(post => post && post.contentType() === 'comment' && (!composerPost || post.number() < composerPost.number()))
-                .sort((a, b) => b.time() - a.time())
+                .sort((a, b) => b.createdAt() - a.createdAt())
                 .filter(post => {
                   const user = post.user();
                   return user && userMatches(user);
@@ -153,9 +157,9 @@ export default function addComposerAutocomplete() {
               const height = dropdown.$().outerHeight();
               const parent = dropdown.$().offsetParent();
               let left = coordinates.left;
-              let top = coordinates.top + 15;
+              let top = coordinates.top - this.scrollTop + 15;
               if (top + height > parent.height()) {
-                top = coordinates.top - height - 15;
+                top = coordinates.top - this.scrollTop - height - 15;
               }
               if (left + width > parent.width()) {
                 left = parent.width() - width;
@@ -188,5 +192,13 @@ export default function addComposerAutocomplete() {
           }
         }
       });
+  });
+
+  extend(TextEditor.prototype, 'toolbarItems', function(items) {
+    items.add('mention', (
+      <TextEditorButton onclick={() => this.insertAtCursor('@')} icon="fas fa-at">
+        {app.translator.trans('flarum-mentions.forum.composer.mention_tooltip')}
+      </TextEditorButton>
+    ));
   });
 }

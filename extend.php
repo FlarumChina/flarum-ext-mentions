@@ -15,10 +15,10 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\View\Factory;
 
 return [
-    (new Extend\Assets('forum'))
-        ->asset(__DIR__.'/js/forum/dist/extension.js')
-        ->asset(__DIR__.'/less/forum/extension.less')
-        ->bootstrapper('flarum/mentions/main'),
+    (new Extend\Frontend('forum'))
+        ->js(__DIR__.'/js/dist/forum.js')
+        ->css(__DIR__.'/less/forum.less'),
+
     function (Dispatcher $events, Factory $views) {
         $events->subscribe(Listener\AddPostMentionedByRelationship::class);
         $events->subscribe(Listener\FormatPostMentions::class);
